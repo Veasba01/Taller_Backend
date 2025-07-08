@@ -13,6 +13,7 @@ export interface CreateHojaTrabajoDto {
   servicios?: Array<{
     servicioId: number;
     comentario?: string;
+    precio?: number; // 🆕 Campo para precios personalizados
   }>;
 }
 
@@ -27,12 +28,14 @@ export interface UpdateHojaTrabajoDto {
 export interface AgregarServicioDto {
   servicioId: number;
   comentario?: string;
+  precio?: number; // 🆕 Campo para precios personalizados
 }
 
 export interface ActualizarServiciosDto {
   servicios: Array<{
     servicioId: number;
     comentario?: string;
+    precio?: number; // 🆕 Campo para precios personalizados
   }>;
 }
 
@@ -121,10 +124,15 @@ export class HojaTrabajoService {
       throw new Error('El servicio ya está agregado a esta hoja de trabajo');
     }
 
+    // 🔥 CAMBIO PRINCIPAL: Usar precio personalizado o precio del catálogo
+    const precioFinal = agregarServicioDto.precio !== undefined 
+      ? agregarServicioDto.precio  // 🆕 Usar precio personalizado si se proporciona
+      : servicio.precio;           // 🔄 Usar precio del catálogo como fallback
+
     const detalle = this.hojaTrabajoDetalleRepository.create({
       hojaTrabajoId: hojaTrabajoId,
       servicioId: agregarServicioDto.servicioId,
-      precio: servicio.precio,
+      precio: precioFinal, // 🆕 USAR EL PRECIO CALCULADO
       comentario: agregarServicioDto.comentario,
     });
 
@@ -194,10 +202,15 @@ export class HojaTrabajoService {
         throw new NotFoundException(`Servicio con ID ${servicioDto.servicioId} no encontrado`);
       }
 
+      // 🔥 CAMBIO PRINCIPAL: Usar precio personalizado o precio del catálogo
+      const precioFinal = servicioDto.precio !== undefined 
+        ? servicioDto.precio  // 🆕 Usar precio personalizado si se proporciona
+        : servicio.precio;    // 🔄 Usar precio del catálogo como fallback
+
       const detalle = this.hojaTrabajoDetalleRepository.create({
         hojaTrabajoId: hojaTrabajoId,
         servicioId: servicioDto.servicioId,
-        precio: servicio.precio,
+        precio: precioFinal, // 🆕 USAR EL PRECIO CALCULADO
         comentario: servicioDto.comentario,
       });
 
