@@ -101,6 +101,16 @@ interface AgregarServicioDto {
 }
 ```
 
+#### ActualizarServiciosDto
+```typescript
+interface ActualizarServiciosDto {
+  servicios: Array<{
+    servicioId: number;
+    comentario?: string;
+  }>;
+}
+```
+
 ---
 
 ## Endpoints de Servicios
@@ -367,6 +377,39 @@ Servicio[]
 }
 ```
 
+### 4. Actualizar servicios de hoja de trabajo (masivo)
+- **Método**: `PUT`
+- **URL**: `/hoja-trabajo/:id/servicios`
+- **Parámetros**: `id` (number) - ID de la hoja de trabajo
+- **Body**: `ActualizarServiciosDto`
+- **Respuesta**: `HojaTrabajo`
+- **Descripción**: Reemplaza TODOS los servicios existentes con los nuevos servicios especificados
+- **Errores**: 
+  - 404 si la hoja de trabajo no existe
+  - 404 si algún servicio no existe
+
+**Ejemplo de request**:
+```json
+{
+  "servicios": [
+    {
+      "servicioId": 1,
+      "comentario": "Frenos nuevos requeridos"
+    },
+    {
+      "servicioId": 3,
+      "comentario": "Revisar suspensión delantera"
+    },
+    {
+      "servicioId": 9,
+      "comentario": "Alineación después de cambio de llantas"
+    }
+  ]
+}
+```
+
+**Nota importante**: Este endpoint elimina todos los servicios existentes y agrega los nuevos. El total se recalcula automáticamente.
+
 ---
 
 ## Códigos de Estado HTTP
@@ -506,6 +549,40 @@ const updateEstadoHojaTrabajo = async (id, estado) => {
 };
 ```
 
+### Actualizar servicios masivamente
+```javascript
+const actualizarServicios = async (hojaTrabajoId, servicios) => {
+  try {
+    const response = await fetch(`http://localhost:3000/hoja-trabajo/${hojaTrabajoId}/servicios`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ servicios }),
+    });
+    
+    if (!response.ok) {
+      throw new Error('Error al actualizar servicios');
+    }
+    
+    const hojaActualizada = await response.json();
+    return hojaActualizada;
+  } catch (error) {
+    console.error('Error al actualizar servicios:', error);
+    throw error;
+  }
+};
+
+// Ejemplo de uso
+const nuevosServicios = [
+  { servicioId: 1, comentario: "Frenos delanteros" },
+  { servicioId: 3, comentario: "Suspensión completa" },
+  { servicioId: 9, comentario: "Alineación post-cambio" }
+];
+
+const hojaActualizada = await actualizarServicios(1, nuevosServicios);
+```
+
 ---
 
 ## Flujo de Trabajo Recomendado
@@ -533,7 +610,7 @@ const hojaCreada = await createHojaTrabajo(nuevaHoja);
 
 ### 3. Agregar servicios dinámicamente
 ```javascript
-// El usuario selecciona servicios en el frontend
+// OPCIÓN A: Agregar servicios uno por uno
 const serviciosSeleccionados = [
   { servicioId: 1, comentario: "Ruido al frenar" },
   { servicioId: 3, comentario: "Revisar amortiguadores" }
@@ -542,6 +619,29 @@ const serviciosSeleccionados = [
 for (const servicio of serviciosSeleccionados) {
   await agregarServicio(hojaCreada.id, servicio);
 }
+
+// OPCIÓN B: Actualizar todos los servicios de una vez (RECOMENDADO)
+await actualizarServicios(hojaCreada.id, serviciosSeleccionados);
+```
+
+### 3.1. Modificar servicios de hoja existente
+```javascript
+// Para modificar servicios de una hoja de trabajo ya creada
+const hojaTrabajoId = 1;
+
+// Obtener servicios actuales
+const hojaActual = await fetch(`http://localhost:3000/hoja-trabajo/${hojaTrabajoId}`)
+  .then(res => res.json());
+
+// Modificar la lista de servicios
+const serviciosModificados = [
+  { servicioId: 1, comentario: "Frenos completados" },
+  { servicioId: 5, comentario: "Cambio de compensadores agregado" },
+  // Nota: esto eliminará cualquier otro servicio que tuviera antes
+];
+
+// Actualizar todos los servicios
+const hojaActualizada = await actualizarServicios(hojaTrabajoId, serviciosModificados);
 ```
 
 ### 4. Obtener hoja actualizada con totales

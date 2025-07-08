@@ -29,6 +29,13 @@ export interface AgregarServicioDto {
   comentario?: string;
 }
 
+export interface ActualizarServiciosDto {
+  servicios: Array<{
+    servicioId: number;
+    comentario?: string;
+  }>;
+}
+
 @Injectable()
 export class HojaTrabajoService {
   constructor(
@@ -166,6 +173,41 @@ export class HojaTrabajoService {
       where: { id: detalleId },
       relations: ['servicio']
     });
+  }
+
+  async actualizarServicios(hojaTrabajoId: number, actualizarServiciosDto: ActualizarServiciosDto): Promise<HojaTrabajo | null> {
+    const hojaTrabajo = await this.hojaTrabajoRepository.findOne({ where: { id: hojaTrabajoId } });
+    if (!hojaTrabajo) {
+      throw new NotFoundException('Hoja de trabajo no encontrada');
+    }
+
+    // Eliminar todos los servicios existentes
+    await this.hojaTrabajoDetalleRepository.delete({ hojaTrabajoId });
+
+    // Agregar los nuevos servicios
+    for (const servicioDto of actualizarServiciosDto.servicios) {
+      const servicio = await this.servicioRepository.findOne({ 
+        where: { id: servicioDto.servicioId } 
+      });
+      
+      if (!servicio) {
+        throw new NotFoundException(`Servicio con ID ${servicioDto.servicioId} no encontrado`);
+      }
+
+      const detalle = this.hojaTrabajoDetalleRepository.create({
+        hojaTrabajoId: hojaTrabajoId,
+        servicioId: servicioDto.servicioId,
+        precio: servicio.precio,
+        comentario: servicioDto.comentario,
+      });
+
+      await this.hojaTrabajoDetalleRepository.save(detalle);
+    }
+
+    // Actualizar el total
+    await this.actualizarTotal(hojaTrabajoId);
+    
+    return this.findOne(hojaTrabajoId);
   }
 
   private async actualizarTotal(hojaTrabajoId: number): Promise<void> {

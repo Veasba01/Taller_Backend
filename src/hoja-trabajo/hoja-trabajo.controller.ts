@@ -8,12 +8,14 @@ import {
   Delete,
   HttpException,
   HttpStatus,
+  Put
 } from '@nestjs/common';
 import { 
   HojaTrabajoService, 
   CreateHojaTrabajoDto, 
   UpdateHojaTrabajoDto,
-  AgregarServicioDto 
+  AgregarServicioDto,
+  ActualizarServiciosDto
 } from './hoja-trabajo.service';
 
 @Controller('hoja-trabajo')
@@ -94,6 +96,22 @@ export class HojaTrabajoController {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       throw new HttpException(errorMessage, HttpStatus.NOT_FOUND);
+    }
+  }
+
+  @Put(':id/servicios')
+  async actualizarServicios(
+    @Param('id') id: string,
+    @Body() actualizarServiciosDto: ActualizarServiciosDto
+  ) {
+    try {
+      return await this.hojaTrabajoService.actualizarServicios(+id, actualizarServiciosDto);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      if (errorMessage.includes('no encontrada') || errorMessage.includes('no encontrado')) {
+        throw new HttpException(errorMessage, HttpStatus.NOT_FOUND);
+      }
+      throw new HttpException(errorMessage, HttpStatus.BAD_REQUEST);
     }
   }
 }
