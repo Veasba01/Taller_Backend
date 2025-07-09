@@ -17,6 +17,7 @@ Se ha implementado exitosamente el soporte para precios personalizados en el bac
 ```typescript
 export interface CreateHojaTrabajoDto {
   cliente?: string;
+  telefono?: string; // 🆕 Campo para teléfono del cliente
   vehiculo?: string;
   placa?: string;
   observaciones?: string;
@@ -25,6 +26,15 @@ export interface CreateHojaTrabajoDto {
     comentario?: string;
     precio?: number; // 🆕 Campo para precios personalizados
   }>;
+}
+
+export interface UpdateHojaTrabajoDto {
+  cliente?: string;
+  telefono?: string; // 🆕 Campo para teléfono del cliente
+  vehiculo?: string;
+  placa?: string;
+  observaciones?: string;
+  estado?: 'pendiente' | 'en_proceso' | 'completado' | 'entregado';
 }
 
 export interface AgregarServicioDto {
@@ -40,6 +50,49 @@ export interface ActualizarServiciosDto {
     precio?: number; // 🆕 Campo para precios personalizados
   }>;
 }
+```
+
+### 2. `src/entities/hoja-trabajo.entity.ts`
+
+#### Entidad Actualizada
+
+✅ **Se agregó el campo `telefono` a la entidad:**
+
+```typescript
+@Entity('hoja_trabajo')
+export class HojaTrabajo {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  cliente: string;
+
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  telefono: string; // 🆕 Campo para teléfono del cliente
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  vehiculo: string;
+  
+  // ...resto de campos
+}
+```
+
+### 3. `database/add_telefono_column.sql`
+
+#### Migración de Base de Datos
+
+✅ **Se creó script SQL para agregar la columna telefono:**
+
+```sql
+-- Agregar la columna telefono
+ALTER TABLE hoja_trabajo 
+ADD COLUMN telefono VARCHAR(20) NULL 
+AFTER cliente;
+
+-- Comentario para documentar el campo
+ALTER TABLE hoja_trabajo 
+MODIFY COLUMN telefono VARCHAR(20) NULL 
+COMMENT 'Número de teléfono del cliente';
 ```
 
 #### Métodos Actualizados
@@ -111,6 +164,8 @@ const detalle = this.hojaTrabajoDetalleRepository.create({
    POST /hoja-trabajo
    {
      "cliente": "Juan Pérez",
+     "telefono": "987-654-3210",
+     "vehiculo": "Honda Civic 2019",
      "servicios": [
        {
          "servicioId": 1,
@@ -160,11 +215,12 @@ const detalle = this.hojaTrabajoDetalleRepository.create({
 
 ## 🧪 Pruebas Recomendadas
 
-### 1. Crear hoja de trabajo con precios personalizados
+### 1. Crear hoja de trabajo con precios personalizados y teléfono
 ```bash
 POST /hoja-trabajo
 {
   "cliente": "María García",
+  "telefono": "123-456-7890",
   "vehiculo": "Toyota Corolla 2020",
   "servicios": [
     {
@@ -257,11 +313,15 @@ PUT /hoja-trabajo/1/servicios
 
 ### Backend: ✅ COMPLETADO
 - [x] Interfaces actualizadas con campo `precio?: number`
+- [x] Interfaces actualizadas con campo `telefono?: string`
+- [x] Entidad HojaTrabajo actualizada con campo telefono
 - [x] Lógica de precios personalizados implementada
 - [x] Método `agregarServicio()` actualizado
 - [x] Método `actualizarServicios()` actualizado
+- [x] Método `create()` actualizado para incluir telefono
 - [x] Validaciones y manejo de errores
 - [x] Recálculo automático de totales
+- [x] Script de migración SQL creado
 
 ### Frontend: 🔄 EN PROGRESO (según documentación)
 - [x] Interfaces TypeScript actualizadas
@@ -273,11 +333,16 @@ PUT /hoja-trabajo/1/servicios
 
 ## 📝 Próximos Pasos Recomendados
 
-1. **Probar los endpoints** con Postman/Insomnia
-2. **Verificar integración** con el frontend
-3. **Validar cálculos** de totales
-4. **Documentar ejemplos** en API_DOCUMENTATION.md
-5. **Agregar pruebas unitarias** si es necesario
+1. **Ejecutar migración SQL** para agregar la columna telefono:
+   ```sql
+   -- Ejecutar el archivo: database/add_telefono_column.sql
+   SOURCE database/add_telefono_column.sql;
+   ```
+2. **Probar los endpoints** con Postman/Insomnia
+3. **Verificar integración** con el frontend
+4. **Validar cálculos** de totales
+5. **Documentar ejemplos** en API_DOCUMENTATION.md
+6. **Agregar pruebas unitarias** si es necesario
 
 ---
 

@@ -7,6 +7,7 @@ import { Servicio } from '../entities/servicio.entity';
 
 export interface CreateHojaTrabajoDto {
   cliente?: string;
+  telefono?: string; // 🆕 Campo para teléfono del cliente
   vehiculo?: string;
   placa?: string;
   observaciones?: string;
@@ -19,6 +20,7 @@ export interface CreateHojaTrabajoDto {
 
 export interface UpdateHojaTrabajoDto {
   cliente?: string;
+  telefono?: string; // 🆕 Campo para teléfono del cliente
   vehiculo?: string;
   placa?: string;
   observaciones?: string;
@@ -53,6 +55,7 @@ export class HojaTrabajoService {
   async create(createHojaTrabajoDto: CreateHojaTrabajoDto): Promise<HojaTrabajo | null> {
     const hojaTrabajo = this.hojaTrabajoRepository.create({
       cliente: createHojaTrabajoDto.cliente,
+      telefono: createHojaTrabajoDto.telefono,
       vehiculo: createHojaTrabajoDto.vehiculo,
       placa: createHojaTrabajoDto.placa,
       observaciones: createHojaTrabajoDto.observaciones,

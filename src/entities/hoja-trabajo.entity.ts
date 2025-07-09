@@ -9,6 +9,9 @@ export class HojaTrabajo {
   @Column({ type: 'varchar', length: 100, nullable: true })
   cliente: string;
 
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  telefono: string;
+
   @Column({ type: 'varchar', length: 50, nullable: true })
   vehiculo: string;
 
