@@ -5,6 +5,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { HojaTrabajoModule } from './hoja-trabajo/hoja-trabajo.module';
 import { ServicioModule } from './servicios/servicio.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 import { HojaTrabajo } from './entities/hoja-trabajo.entity';
 import { HojaTrabajoDetalle } from './entities/hoja-trabajo-detalle.entity';
 import { Servicio } from './entities/servicio.entity';
@@ -31,6 +32,7 @@ import { Servicio } from './entities/servicio.entity';
     }),
     HojaTrabajoModule,
     ServicioModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],
