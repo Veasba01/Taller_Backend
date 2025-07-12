@@ -5,6 +5,7 @@ import { Repository } from 'typeorm';
 import { HojaTrabajo } from '../entities/hoja-trabajo.entity';
 import { HojaTrabajoDetalle } from '../entities/hoja-trabajo-detalle.entity';
 import { Servicio } from '../entities/servicio.entity';
+import { Gasto } from '../entities/gasto.entity';
 import {
   IngresosDiaResponse,
   ServiciosCompletadosResponse,
@@ -17,7 +18,9 @@ import {
   ServicioResumen,
   IngresoDia,
   IngresosPorMetodoPagoResponse,
-  MetodoPagoResponse
+  MetodoPagoResponse,
+  GastosResponse,
+  ResumenFinancieroResponse
 } from './interfaces/dashboard.interfaces';
 
 @Injectable()
@@ -29,6 +32,8 @@ export class DashboardService {
     private readonly hojaTrabajoDetalleRepository: Repository<HojaTrabajoDetalle>,
     @InjectRepository(Servicio)
     private readonly servicioRepository: Repository<Servicio>,
+    @InjectRepository(Gasto)
+    private readonly gastosRepository: Repository<Gasto>,
   ) {}
 
   /**
@@ -370,6 +375,73 @@ export class DashboardService {
       fecha: fechaConsulta.toISOString().split('T')[0],
       metodos,
       totalIngresos
+    };
+  }
+
+  /**
+   * Obtiene los gastos del día
+   */
+  async getGastosDia(fecha?: string): Promise<GastosResponse> {
+    const fechaConsulta = fecha ? new Date(fecha) : new Date();
+    const inicioDia = new Date(fechaConsulta.getFullYear(), fechaConsulta.getMonth(), fechaConsulta.getDate());
+    const finDia = new Date(fechaConsulta.getFullYear(), fechaConsulta.getMonth(), fechaConsulta.getDate() + 1);
+
+    const gastos = await this.gastosRepository
+      .createQueryBuilder('gasto')
+      .where('gasto.created_at >= :inicioDia', { inicioDia })
+      .andWhere('gasto.created_at < :finDia', { finDia })
+      .orderBy('gasto.created_at', 'DESC')
+      .getMany();
+
+    const totalGastos = gastos.reduce((sum, gasto) => sum + Number(gasto.monto), 0);
+
+    return {
+      fecha: fechaConsulta.toISOString().split('T')[0],
+      totalGastos,
+      cantidadGastos: gastos.length,
+      gastos: gastos.map(g => ({
+        id: g.id,
+        monto: Number(g.monto),
+        comentario: g.comentario,
+        fecha: g.created_at.toISOString().split('T')[0]
+      }))
+    };
+  }
+
+  /**
+   * Obtiene el resumen financiero del día (ingresos vs gastos)
+   */
+  async getResumenFinanciero(fecha?: string): Promise<ResumenFinancieroResponse> {
+    const fechaConsulta = fecha ? new Date(fecha) : new Date();
+    const inicioDia = new Date(fechaConsulta.getFullYear(), fechaConsulta.getMonth(), fechaConsulta.getDate());
+    const finDia = new Date(fechaConsulta.getFullYear(), fechaConsulta.getMonth(), fechaConsulta.getDate() + 1);
+
+    // Obtener ingresos del día
+    const ingresos = await this.hojaTrabajoRepository
+      .createQueryBuilder('ht')
+      .where('ht.estado IN (:...estados)', { estados: ['completado', 'entregado'] })
+      .andWhere('ht.updated_at >= :inicioDia', { inicioDia })
+      .andWhere('ht.updated_at < :finDia', { finDia })
+      .getMany();
+
+    // Obtener gastos del día
+    const gastos = await this.gastosRepository
+      .createQueryBuilder('gasto')
+      .where('gasto.created_at >= :inicioDia', { inicioDia })
+      .andWhere('gasto.created_at < :finDia', { finDia })
+      .getMany();
+
+    const totalIngresos = ingresos.reduce((sum, hoja) => sum + Number(hoja.total), 0);
+    const totalGastos = gastos.reduce((sum, gasto) => sum + Number(gasto.monto), 0);
+    const utilidad = totalIngresos - totalGastos;
+    const margenUtilidad = totalIngresos > 0 ? (utilidad / totalIngresos) * 100 : 0;
+
+    return {
+      fecha: fechaConsulta.toISOString().split('T')[0],
+      ingresos: totalIngresos,
+      gastos: totalGastos,
+      utilidad,
+      margenUtilidad: parseFloat(margenUtilidad.toFixed(2))
     };
   }
 

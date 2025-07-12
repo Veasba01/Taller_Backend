@@ -49,4 +49,14 @@ export class DashboardController {
   async getIngresosPorMetodoPago(@Query('fecha') fecha?: string) {
     return await this.dashboardService.getIngresosPorMetodoPago(fecha);
   }
+
+  @Get('gastos-dia')
+  async getGastosDia(@Query('fecha') fecha?: string) {
+    return await this.dashboardService.getGastosDia(fecha);
+  }
+
+  @Get('resumen-financiero')
+  async getResumenFinanciero(@Query('fecha') fecha?: string) {
+    return await this.dashboardService.getResumenFinanciero(fecha);
+  }
 }

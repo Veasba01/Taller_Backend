@@ -120,3 +120,25 @@ export interface IngresosPorMetodoPagoResponse {
   metodos: MetodoPagoResponse[];
   totalIngresos: number;
 }
+
+export interface GastosResponse {
+  fecha: string;
+  totalGastos: number;
+  cantidadGastos: number;
+  gastos: GastoResumen[];
+}
+
+export interface GastoResumen {
+  id: number;
+  monto: number;
+  comentario: string;
+  fecha: string;
+}
+
+export interface ResumenFinancieroResponse {
+  fecha: string;
+  ingresos: number;
+  gastos: number;
+  utilidad: number;
+  margenUtilidad: number;
+}
