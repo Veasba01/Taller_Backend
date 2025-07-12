@@ -44,4 +44,9 @@ export class DashboardController {
   async getEstadisticasGenerales() {
     return await this.dashboardService.getEstadisticasGenerales();
   }
+
+  @Get('ingresos-por-metodo-pago')
+  async getIngresosPorMetodoPago(@Query('fecha') fecha?: string) {
+    return await this.dashboardService.getIngresosPorMetodoPago(fecha);
+  }
 }

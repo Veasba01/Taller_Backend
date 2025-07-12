@@ -24,6 +24,9 @@ export class HojaTrabajo {
   @Column({ type: 'enum', enum: ['pendiente', 'en_proceso', 'completado', 'entregado'], default: 'pendiente' })
   estado: string;
 
+  @Column({ type: 'enum', enum: ['pendiente', 'sinpe', 'tarjeta', 'efectivo'], default: 'pendiente' })
+  metodo_pago: string;
+
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   total: number;
 

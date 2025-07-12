@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -14,7 +15,9 @@ import {
   ResumenSemanaResponse,
   EstadisticasGeneralesResponse,
   ServicioResumen,
-  IngresoDia
+  IngresoDia,
+  IngresosPorMetodoPagoResponse,
+  MetodoPagoResponse
 } from './interfaces/dashboard.interfaces';
 
 @Injectable()
@@ -295,6 +298,7 @@ export class DashboardService {
   async getEstadisticasGenerales(): Promise<EstadisticasGeneralesResponse> {
     const totalTrabajos = await this.hojaTrabajoRepository.count();
     
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const totalClientesResult = await this.hojaTrabajoRepository
       .createQueryBuilder('ht')
       .select('COUNT(DISTINCT ht.cliente)', 'total')
@@ -302,6 +306,7 @@ export class DashboardService {
     
     const totalServicios = await this.servicioRepository.count({ where: { activo: true } });
     
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const ingresosTotalesResult = await this.hojaTrabajoRepository
       .createQueryBuilder('ht')
       .select('SUM(ht.total)', 'total')
@@ -326,6 +331,45 @@ export class DashboardService {
         pendientes: trabajosPendientes,
         porcentajeCompletados: totalTrabajos > 0 ? (trabajosCompletados / totalTrabajos * 100).toFixed(2) : '0'
       }
+    };
+  }
+
+  /**
+   * Obtiene los ingresos por método de pago
+   */
+  async getIngresosPorMetodoPago(fecha?: string): Promise<IngresosPorMetodoPagoResponse> {
+    const fechaConsulta = fecha ? new Date(fecha) : new Date();
+    const inicioDia = new Date(fechaConsulta.getFullYear(), fechaConsulta.getMonth(), fechaConsulta.getDate());
+    const finDia = new Date(fechaConsulta.getFullYear(), fechaConsulta.getMonth(), fechaConsulta.getDate() + 1);
+
+    const trabajos = await this.hojaTrabajoRepository
+      .createQueryBuilder('ht')
+      .where('ht.estado IN (:...estados)', { estados: ['completado', 'entregado'] })
+      .andWhere('ht.updated_at >= :inicioDia', { inicioDia })
+      .andWhere('ht.updated_at < :finDia', { finDia })
+      .getMany();
+
+    const totalIngresos = trabajos.reduce((sum, hoja) => sum + Number(hoja.total), 0);
+    
+    // Agrupar por método de pago
+    const metodosPago = ['pendiente', 'sinpe', 'tarjeta', 'efectivo'];
+    const metodos: MetodoPagoResponse[] = metodosPago.map(metodo => {
+      const trabajosMetodo = trabajos.filter(t => t.metodo_pago === metodo);
+      const ingresos = trabajosMetodo.reduce((sum, hoja) => sum + Number(hoja.total), 0);
+      const porcentaje = totalIngresos > 0 ? (ingresos / totalIngresos) * 100 : 0;
+      
+      return {
+        metodo,
+        cantidad: trabajosMetodo.length,
+        ingresos,
+        porcentaje: parseFloat(porcentaje.toFixed(2))
+      };
+    });
+
+    return {
+      fecha: fechaConsulta.toISOString().split('T')[0],
+      metodos,
+      totalIngresos
     };
   }
 

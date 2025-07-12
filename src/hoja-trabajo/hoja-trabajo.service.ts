@@ -11,6 +11,7 @@ export interface CreateHojaTrabajoDto {
   vehiculo?: string;
   placa?: string;
   observaciones?: string;
+  metodo_pago?: 'pendiente' | 'sinpe' | 'tarjeta' | 'efectivo';
   servicios?: Array<{
     servicioId: number;
     comentario?: string;
@@ -25,6 +26,7 @@ export interface UpdateHojaTrabajoDto {
   placa?: string;
   observaciones?: string;
   estado?: 'pendiente' | 'en_proceso' | 'completado' | 'entregado';
+  metodo_pago?: 'pendiente' | 'sinpe' | 'tarjeta' | 'efectivo';
 }
 
 export interface AgregarServicioDto {
@@ -59,6 +61,7 @@ export class HojaTrabajoService {
       vehiculo: createHojaTrabajoDto.vehiculo,
       placa: createHojaTrabajoDto.placa,
       observaciones: createHojaTrabajoDto.observaciones,
+      metodo_pago: createHojaTrabajoDto.metodo_pago,
     });
     
     const hojaGuardada = await this.hojaTrabajoRepository.save(hojaTrabajo);

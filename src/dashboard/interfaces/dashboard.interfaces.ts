@@ -107,3 +107,16 @@ export interface EstadisticasGeneralesResponse {
     porcentajeCompletados: string;
   };
 }
+
+export interface MetodoPagoResponse {
+  metodo: string;
+  cantidad: number;
+  ingresos: number;
+  porcentaje: number;
+}
+
+export interface IngresosPorMetodoPagoResponse {
+  fecha: string;
+  metodos: MetodoPagoResponse[];
+  totalIngresos: number;
+}
