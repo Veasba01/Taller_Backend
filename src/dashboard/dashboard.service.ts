@@ -6,6 +6,7 @@ import { HojaTrabajo } from '../entities/hoja-trabajo.entity';
 import { HojaTrabajoDetalle } from '../entities/hoja-trabajo-detalle.entity';
 import { Servicio } from '../entities/servicio.entity';
 import { Gasto } from '../entities/gasto.entity';
+import { TimezoneUtil } from '../utils/timezone.util';
 import {
   IngresosDiaResponse,
   ServiciosCompletadosResponse,
@@ -40,9 +41,8 @@ export class DashboardService {
    * Obtiene los ingresos del día especificado
    */
   async getIngresosDia(fecha?: string): Promise<IngresosDiaResponse> {
-    const fechaConsulta = fecha ? new Date(fecha) : new Date();
-    const inicioDia = new Date(fechaConsulta.getFullYear(), fechaConsulta.getMonth(), fechaConsulta.getDate());
-    const finDia = new Date(fechaConsulta.getFullYear(), fechaConsulta.getMonth(), fechaConsulta.getDate() + 1);
+    const fechaConsulta = fecha ? TimezoneUtil.parseCostaRicaDate(fecha) : TimezoneUtil.getCurrentCostaRicaDate();
+    const { inicioDia, finDia } = TimezoneUtil.getDayRange(fechaConsulta);
 
     const ingresos = await this.hojaTrabajoRepository
       .createQueryBuilder('ht')
@@ -71,8 +71,8 @@ export class DashboardService {
    * Obtiene los servicios completados en la semana
    */
   async getServiciosCompletadosSemana(fecha?: string): Promise<ServiciosCompletadosResponse> {
-    const fechaConsulta = fecha ? new Date(fecha) : new Date();
-    const { inicioSemana, finSemana } = this.obtenerRangoSemana(fechaConsulta);
+    const fechaConsulta = fecha ? TimezoneUtil.parseCostaRicaDate(fecha) : TimezoneUtil.getCurrentCostaRicaDate();
+    const { inicioSemana, finSemana } = TimezoneUtil.getWeekRange(fechaConsulta);
 
     const serviciosCompletados = await this.hojaTrabajoDetalleRepository
       .createQueryBuilder('htd')
@@ -108,8 +108,8 @@ export class DashboardService {
    * Obtiene los clientes atendidos en la semana
    */
   async getClientesAtendidosSemana(fecha?: string): Promise<ClientesAtendidosResponse> {
-    const fechaConsulta = fecha ? new Date(fecha) : new Date();
-    const { inicioSemana, finSemana } = this.obtenerRangoSemana(fechaConsulta);
+    const fechaConsulta = fecha ? TimezoneUtil.parseCostaRicaDate(fecha) : TimezoneUtil.getCurrentCostaRicaDate();
+    const { inicioSemana, finSemana } = TimezoneUtil.getWeekRange(fechaConsulta);
 
     const clientesAtendidos = await this.hojaTrabajoRepository
       .createQueryBuilder('ht')
@@ -138,9 +138,8 @@ export class DashboardService {
    * Obtiene los servicios pendientes del día
    */
   async getServiciosPendientesDia(fecha?: string): Promise<ServiciosPendientesResponse> {
-    const fechaConsulta = fecha ? new Date(fecha) : new Date();
-    const inicioDia = new Date(fechaConsulta.getFullYear(), fechaConsulta.getMonth(), fechaConsulta.getDate());
-    const finDia = new Date(fechaConsulta.getFullYear(), fechaConsulta.getMonth(), fechaConsulta.getDate() + 1);
+    const fechaConsulta = fecha ? TimezoneUtil.parseCostaRicaDate(fecha) : TimezoneUtil.getCurrentCostaRicaDate();
+    const { inicioDia, finDia } = TimezoneUtil.getDayRange(fechaConsulta);
 
     const serviciosPendientes = await this.hojaTrabajoRepository
       .createQueryBuilder('ht')
@@ -173,8 +172,8 @@ export class DashboardService {
    * Obtiene los ingresos por cada día de la semana
    */
   async getIngresosPorSemana(fecha?: string): Promise<IngresosPorSemanaResponse> {
-    const fechaConsulta = fecha ? new Date(fecha) : new Date();
-    const { inicioSemana, finSemana } = this.obtenerRangoSemana(fechaConsulta);
+    const fechaConsulta = fecha ? TimezoneUtil.parseCostaRicaDate(fecha) : TimezoneUtil.getCurrentCostaRicaDate();
+    const { inicioSemana, finSemana } = TimezoneUtil.getWeekRange(fechaConsulta);
 
     const ingresosSemana = await this.hojaTrabajoRepository
       .createQueryBuilder('ht')
@@ -201,7 +200,11 @@ export class DashboardService {
 
     // Sumar los ingresos por día
     ingresosSemana.forEach(trabajo => {
-      const fechaTrabajo = trabajo.updated_at.toISOString().split('T')[0];
+      // Convertir la fecha updated_at a zona horaria de Costa Rica
+      const fechaTrabajoUTC = new Date(trabajo.updated_at);
+      const fechaTrabajoCostaRica = new Date(fechaTrabajoUTC.getTime() - (6 * 60 * 60 * 1000)); // UTC-6
+      const fechaTrabajo = fechaTrabajoCostaRica.toISOString().split('T')[0];
+      
       if (ingresosPorDia[fechaTrabajo]) {
         ingresosPorDia[fechaTrabajo].ingresos += Number(trabajo.total);
         ingresosPorDia[fechaTrabajo].cantidadTrabajos += 1;
@@ -221,9 +224,8 @@ export class DashboardService {
    * Obtiene los ingresos por cada día del mes
    */
   async getIngresosPorMes(fecha?: string): Promise<IngresosPorMesResponse> {
-    const fechaConsulta = fecha ? new Date(fecha) : new Date();
-    const inicioMes = new Date(fechaConsulta.getFullYear(), fechaConsulta.getMonth(), 1);
-    const finMes = new Date(fechaConsulta.getFullYear(), fechaConsulta.getMonth() + 1, 1);
+    const fechaConsulta = fecha ? TimezoneUtil.parseCostaRicaDate(fecha) : TimezoneUtil.getCurrentCostaRicaDate();
+    const { inicioMes, finMes } = TimezoneUtil.getMonthRange(fechaConsulta);
 
     const ingresosMes = await this.hojaTrabajoRepository
       .createQueryBuilder('ht')
@@ -249,7 +251,11 @@ export class DashboardService {
 
     // Sumar los ingresos por día
     ingresosMes.forEach(trabajo => {
-      const fechaTrabajo = trabajo.updated_at.toISOString().split('T')[0];
+      // Convertir la fecha updated_at a zona horaria de Costa Rica
+      const fechaTrabajoUTC = new Date(trabajo.updated_at);
+      const fechaTrabajoCostaRica = new Date(fechaTrabajoUTC.getTime() - (6 * 60 * 60 * 1000)); // UTC-6
+      const fechaTrabajo = fechaTrabajoCostaRica.toISOString().split('T')[0];
+      
       if (ingresosPorDia[fechaTrabajo]) {
         ingresosPorDia[fechaTrabajo].ingresos += Number(trabajo.total);
         ingresosPorDia[fechaTrabajo].cantidadTrabajos += 1;
@@ -270,8 +276,8 @@ export class DashboardService {
    * Obtiene el resumen completo de la semana
    */
   async getResumenSemana(fecha?: string): Promise<ResumenSemanaResponse> {
-    const fechaConsulta = fecha ? new Date(fecha) : new Date();
-    const { inicioSemana, finSemana } = this.obtenerRangoSemana(fechaConsulta);
+    const fechaConsulta = fecha ? TimezoneUtil.parseCostaRicaDate(fecha) : TimezoneUtil.getCurrentCostaRicaDate();
+    const { inicioSemana, finSemana } = TimezoneUtil.getWeekRange(fechaConsulta);
 
     const [ingresosSemana, serviciosCompletados, clientesAtendidos] = await Promise.all([
       this.getIngresosPorSemana(fecha),
@@ -343,9 +349,8 @@ export class DashboardService {
    * Obtiene los ingresos por método de pago
    */
   async getIngresosPorMetodoPago(fecha?: string): Promise<IngresosPorMetodoPagoResponse> {
-    const fechaConsulta = fecha ? new Date(fecha) : new Date();
-    const inicioDia = new Date(fechaConsulta.getFullYear(), fechaConsulta.getMonth(), fechaConsulta.getDate());
-    const finDia = new Date(fechaConsulta.getFullYear(), fechaConsulta.getMonth(), fechaConsulta.getDate() + 1);
+    const fechaConsulta = fecha ? TimezoneUtil.parseCostaRicaDate(fecha) : TimezoneUtil.getCurrentCostaRicaDate();
+    const { inicioDia, finDia } = TimezoneUtil.getDayRange(fechaConsulta);
 
     const trabajos = await this.hojaTrabajoRepository
       .createQueryBuilder('ht')
@@ -382,9 +387,8 @@ export class DashboardService {
    * Obtiene los gastos del día
    */
   async getGastosDia(fecha?: string): Promise<GastosResponse> {
-    const fechaConsulta = fecha ? new Date(fecha) : new Date();
-    const inicioDia = new Date(fechaConsulta.getFullYear(), fechaConsulta.getMonth(), fechaConsulta.getDate());
-    const finDia = new Date(fechaConsulta.getFullYear(), fechaConsulta.getMonth(), fechaConsulta.getDate() + 1);
+    const fechaConsulta = fecha ? TimezoneUtil.parseCostaRicaDate(fecha) : TimezoneUtil.getCurrentCostaRicaDate();
+    const { inicioDia, finDia } = TimezoneUtil.getDayRange(fechaConsulta);
 
     const gastos = await this.gastosRepository
       .createQueryBuilder('gasto')
@@ -399,12 +403,17 @@ export class DashboardService {
       fecha: fechaConsulta.toISOString().split('T')[0],
       totalGastos,
       cantidadGastos: gastos.length,
-      gastos: gastos.map(g => ({
-        id: g.id,
-        monto: Number(g.monto),
-        comentario: g.comentario,
-        fecha: g.created_at.toISOString().split('T')[0]
-      }))
+      gastos: gastos.map(g => {
+        // Convertir la fecha created_at a zona horaria de Costa Rica
+        const fechaUTC = new Date(g.created_at);
+        const fechaCostaRica = new Date(fechaUTC.getTime() - (6 * 60 * 60 * 1000)); // UTC-6
+        return {
+          id: g.id,
+          monto: Number(g.monto),
+          comentario: g.comentario,
+          fecha: fechaCostaRica.toISOString().split('T')[0]
+        };
+      })
     };
   }
 
@@ -412,9 +421,8 @@ export class DashboardService {
    * Obtiene el resumen financiero del día (ingresos vs gastos)
    */
   async getResumenFinanciero(fecha?: string): Promise<ResumenFinancieroResponse> {
-    const fechaConsulta = fecha ? new Date(fecha) : new Date();
-    const inicioDia = new Date(fechaConsulta.getFullYear(), fechaConsulta.getMonth(), fechaConsulta.getDate());
-    const finDia = new Date(fechaConsulta.getFullYear(), fechaConsulta.getMonth(), fechaConsulta.getDate() + 1);
+    const fechaConsulta = fecha ? TimezoneUtil.parseCostaRicaDate(fecha) : TimezoneUtil.getCurrentCostaRicaDate();
+    const { inicioDia, finDia } = TimezoneUtil.getDayRange(fechaConsulta);
 
     // Obtener ingresos del día
     const ingresos = await this.hojaTrabajoRepository
@@ -445,19 +453,4 @@ export class DashboardService {
     };
   }
 
-  /**
-   * Método auxiliar para obtener el rango de la semana
-   */
-  private obtenerRangoSemana(fecha: Date) {
-    const dia = fecha.getDay();
-    const diferencia = dia === 0 ? 6 : dia - 1; // Lunes como primer día de la semana
-    const inicioSemana = new Date(fecha);
-    inicioSemana.setDate(fecha.getDate() - diferencia);
-    inicioSemana.setHours(0, 0, 0, 0);
-
-    const finSemana = new Date(inicioSemana);
-    finSemana.setDate(inicioSemana.getDate() + 7);
-
-    return { inicioSemana, finSemana };
-  }
 }

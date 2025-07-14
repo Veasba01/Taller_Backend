@@ -1,9 +1,15 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { DashboardService } from './dashboard.service';
+import { TimezoneUtil } from '../utils/timezone.util';
 
 @Controller('dashboard')
 export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
+
+  @Get('timezone-info')
+  getTimezoneInfo() {
+    return TimezoneUtil.getTimezoneInfo();
+  }
 
   @Get('ingresos-dia')
   async getIngresosDia(@Query('fecha') fecha?: string) {

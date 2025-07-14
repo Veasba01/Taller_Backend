@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Gasto } from '../entities/gasto.entity';
+import { TimezoneUtil } from '../utils/timezone.util';
 
 export interface CreateGastoDto {
   monto: number;
@@ -59,14 +60,17 @@ export class GastosService {
   }
 
   async findByPeriodo(fechaInicio: string, fechaFin: string): Promise<Gasto[]> {
-    const inicio = new Date(fechaInicio);
-    const fin = new Date(fechaFin);
-    fin.setHours(23, 59, 59, 999); // Incluir todo el día final
+    const fechaInicioCostaRica = TimezoneUtil.parseCostaRicaDate(fechaInicio);
+    const fechaFinCostaRica = TimezoneUtil.parseCostaRicaDate(fechaFin);
+    
+    // Obtener el rango completo del día final
+    const { inicioDia: inicio } = TimezoneUtil.getDayRange(fechaInicioCostaRica);
+    const { finDia: fin } = TimezoneUtil.getDayRange(fechaFinCostaRica);
 
     return await this.gastosRepository
       .createQueryBuilder('gasto')
       .where('gasto.created_at >= :inicio', { inicio })
-      .andWhere('gasto.created_at <= :fin', { fin })
+      .andWhere('gasto.created_at < :fin', { fin })
       .orderBy('gasto.created_at', 'DESC')
       .getMany();
   }
@@ -77,17 +81,18 @@ export class GastosService {
   }
 
   async getGastosDelMes(año?: number, mes?: number): Promise<Gasto[]> {
-    const fechaActual = new Date();
-    const añoConsulta = año || fechaActual.getFullYear();
-    const mesConsulta = mes || fechaActual.getMonth() + 1;
+    const fechaActualCostaRica = TimezoneUtil.getCurrentCostaRicaDate();
+    const añoConsulta = año || fechaActualCostaRica.getFullYear();
+    const mesConsulta = mes || fechaActualCostaRica.getMonth() + 1;
 
-    const inicioMes = new Date(añoConsulta, mesConsulta - 1, 1);
-    const finMes = new Date(añoConsulta, mesConsulta, 0);
+    // Crear fecha para el mes específico en Costa Rica
+    const fechaMes = new Date(añoConsulta, mesConsulta - 1, 1);
+    const { inicioMes, finMes } = TimezoneUtil.getMonthRange(fechaMes);
 
     return await this.gastosRepository
       .createQueryBuilder('gasto')
       .where('gasto.created_at >= :inicio', { inicio: inicioMes })
-      .andWhere('gasto.created_at <= :fin', { fin: finMes })
+      .andWhere('gasto.created_at < :fin', { fin: finMes })
       .orderBy('gasto.created_at', 'DESC')
       .getMany();
   }
