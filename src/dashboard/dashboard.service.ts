@@ -78,8 +78,7 @@ export class DashboardService {
       .createQueryBuilder('htd')
       .leftJoinAndSelect('htd.hojaTrabajo', 'ht')
       .leftJoinAndSelect('htd.servicio', 's')
-      .where('htd.completado = :completado', { completado: true })
-      .andWhere('htd.updated_at >= :inicioSemana', { inicioSemana })
+      .where('htd.updated_at >= :inicioSemana', { inicioSemana })
       .andWhere('htd.updated_at < :finSemana', { finSemana })
       .getMany();
 
