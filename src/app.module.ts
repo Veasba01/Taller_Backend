@@ -7,10 +7,12 @@ import { HojaTrabajoModule } from './hoja-trabajo/hoja-trabajo.module';
 import { ServicioModule } from './servicios/servicio.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { GastosModule } from './gastos/gastos.module';
+import { CierreCajaModule } from './cierre-caja/cierre-caja.module';
 import { HojaTrabajo } from './entities/hoja-trabajo.entity';
 import { HojaTrabajoDetalle } from './entities/hoja-trabajo-detalle.entity';
 import { Servicio } from './entities/servicio.entity';
 import { Gasto } from './entities/gasto.entity';
+import { CierreCaja } from './entities/cierre-caja.entity';
 
 @Module({
   imports: [
@@ -26,7 +28,7 @@ import { Gasto } from './entities/gasto.entity';
         username: configService.get('DB_USERNAME'),
         password: configService.get('DB_PASSWORD'),
         database: configService.get('DB_DATABASE'),
-        entities: [HojaTrabajo, HojaTrabajoDetalle, Servicio, Gasto],
+        entities: [HojaTrabajo, HojaTrabajoDetalle, Servicio, Gasto, CierreCaja],
         synchronize: true, // Solo para desarrollo
         logging: false, // Desactivar logging SQL
       }),
@@ -36,6 +38,7 @@ import { Gasto } from './entities/gasto.entity';
     ServicioModule,
     DashboardModule,
     GastosModule,
+    CierreCajaModule,
   ],
   controllers: [AppController],
   providers: [AppService],
